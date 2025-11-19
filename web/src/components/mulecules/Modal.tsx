@@ -25,10 +25,10 @@ export function Modal({
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div
         ref={modalRef}
-        className={`bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100 ${className}`}
+        className={`bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transform transition-all duration-300 scale-100 ${className}`}
       >
         {/* Header */}
-        <div className="bg-linear-to-r from-green-500 to-emerald-600 px-6 py-4 rounded-t-2xl">
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4 rounded-t-2xl">
           <div className="flex items-center justify-between">
             <h2 className="text-white font-bold text-xl">{title}</h2>
             <button
@@ -41,7 +41,9 @@ export function Modal({
         </div>
 
         {/* Content */}
-        <div className="p-6">{children}</div>
+        <div className="p-6 overflow-y-auto flex-grow">
+          {children}
+        </div>
       </div>
     </div>
   );
