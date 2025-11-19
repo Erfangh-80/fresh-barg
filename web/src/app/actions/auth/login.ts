@@ -23,6 +23,10 @@ export const login = async (set: LoginSet, get: LoginGet) => {
   }
 
   cookieStore.set("token", response.body.token, {
+    httpOnly: false,    // کلاینت بتونه بخونه
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
     maxAge: 60 * 60 * 24 * 7, // 7 days
   });
 
