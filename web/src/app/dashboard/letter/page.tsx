@@ -20,7 +20,6 @@ export default async function LettersPage({ }: {}) {
       content: 1,
     },
     set: {
-      authorId: activePosition,
       positionId: activePosition
     },
   });
