@@ -7,7 +7,7 @@ import { redirect, useRouter } from "next/navigation";
 
 interface AuthContextType {
     isAuthenticated: boolean;
-    userLevel: UserLevel;
+    userLevel: UserLevel | null;
     user: GetMeResponse["user"] | null;
     loading: boolean;
     setUserAuth: (token: string) => void;
@@ -32,7 +32,7 @@ export const AuthProvider = ({
 }) => {
     const [user, setUser] = useState(initialUser);
     const router = useRouter()
-    const [userLevel, setUserLevel] = useState<UserLevel>(
+    const [userLevel, setUserLevel] = useState<UserLevel | null>(
         initialUser?.position?.[0]?.level || null
     );
     const [loading, setLoading] = useState(false);
@@ -48,7 +48,7 @@ export const AuthProvider = ({
     };
 
     const setUserAuth = async (token: string) => {
-        Cookies.set("token", token);
+        Cookies.set("token", token, { expires: 7, path: "/" });
         setLoading(true);
         try {
             const res = await GetMe();
