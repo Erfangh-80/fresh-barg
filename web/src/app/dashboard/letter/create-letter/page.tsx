@@ -1,9 +1,7 @@
-import { getOrgans } from "@/app/actions/organ/gets";
-import { getPositions } from "@/app/actions/position/gets";
-import { getUnits } from "@/app/actions/unit/gets";
-import { getUsers } from "@/app/actions/user/getUsers";
+import { getActivePositionId } from "@/app/actions/position/getActivePosition";
 import { LetterForm } from "@/components/organisms/FormLetter";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 const tagOptions = [
     { value: "فوری", label: "فوری" },
@@ -14,20 +12,22 @@ const tagOptions = [
 ];
 
 export default async function LettersPage() {
-    const userCookie = (await cookies()).get("user");
-    const user = userCookie ? JSON.parse(userCookie.value) : null;
+    const cookieStore = await cookies()
+    const userCookie = cookieStore.get("user")
+    if (!userCookie?.value) redirect("/login")
 
-    const userPosition = user.position[0]
+    const user = JSON.parse(userCookie.value)
 
-    const [responsePositions, responseUnits, responseOrgans] = await Promise.all([
-        getPositions({ get: { _id: 1, name: 1 }, set: { page: 1, limit: 50, filterPositions: "all" } }),
-        getUnits({ get: { _id: 1, name: 1 }, set: { page: 1, limit: 50, positionId: userPosition._id } }),
-        getOrgans({ get: { _id: 1, name: 1 }, set: { page: 1, limit: 50, positionId: userPosition._id } }),
-    ]);
+    const activePosition = await getActivePositionId()
+    if (!activePosition) redirect("/dashboard")
 
     return (
         <div className="p-6 space-y-6">
-            <LetterForm authorId={user._id} userPosition={userPosition} orgs={responseOrgans.body} receivers={responsePositions.body} tagOptions={tagOptions} units={responseUnits.body} />
+            <LetterForm
+                authorId={user._id}
+                activePosition={activePosition}
+                tagOptions={tagOptions}
+            />
         </div>
     )
 }
