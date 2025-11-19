@@ -1,7 +1,4 @@
-import { getOrgans } from "@/app/actions/organ/gets";
 import { getActivePositionId } from "@/app/actions/position/getActivePosition";
-import { getPositions } from "@/app/actions/position/gets";
-import { getUnits } from "@/app/actions/unit/gets";
 import { getUsers } from "@/app/actions/user/getUsers";
 import UsersPage from "@/components/pages/user/UserPage";
 import { cookies } from "next/headers";
@@ -19,13 +16,8 @@ const Page = async () => {
 
     if (!userCookie?.value) redirect("/login");
 
-    let user;
-    try {
-        user = JSON.parse(userCookie.value) as { position: Array<{ _id: string; level: string }> };
-    } catch {
-        redirect("/login");
-    }
-
+    const user = JSON.parse(userCookie.value) as { position: Array<{ _id: string; level: string }> };
+    if (!user) redirect("/login")
     const activePositionId = await getActivePositionId();
     const foundPosition = activePositionId
         ? user.position.find(p => p._id === activePositionId)
@@ -50,7 +42,6 @@ const Page = async () => {
         redirect("/dashboard");
     }
 
-    // درخواست داده‌ها
     const responseUser = await getUsers({
         get: {
             _id: 1,
