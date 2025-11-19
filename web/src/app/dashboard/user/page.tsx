@@ -66,26 +66,8 @@ const Page = async () => {
         set: { limit: 10, page: 1 },
     });
 
-    const responseOrg = await getOrgans({
-        get: { _id: 1, name: 1 },
-        set: { page: 1, limit: 10, positionId: activePosition._id },
-    });
-
-    const responseUnit = await getUnits({
-        get: { _id: 1, name: 1 },
-        set: { page: 1, limit: 10, positionId: activePosition._id },
-    });
-
-    const responsePositions = await getPositions({
-        get: { _id: 1, name: 1 },
-        set: { page: 1, limit: 10, filterPositions: "all" },
-    });
-
     return (
         <UsersPage
-            positions={responsePositions.body}
-            units={responseUnit.body}
-            organs={responseOrg.body}
             userPosition={activePosition}
             users={responseUser}
         />

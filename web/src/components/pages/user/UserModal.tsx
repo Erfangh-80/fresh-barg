@@ -8,6 +8,9 @@ import { Modal } from "@/components/mulecules";
 import { MyInput, Button, SelectBox, CustomStyles } from "@/components/atoms";
 import { getProvinces } from "@/app/actions/province/gets";
 import { getCities } from "@/app/actions/city/gets";
+import { getUnits } from "@/app/actions/unit/gets";
+import { getPositions } from "@/app/actions/position/gets";
+import { getOrgans } from "@/app/actions/organ/gets";
 
 interface UserModalProps {
     isOpen: boolean;
@@ -15,9 +18,6 @@ interface UserModalProps {
     onSubmit: (data: UserForm) => void;
     user?: UserType | null;
     isLoading?: boolean;
-    organs?: { _id: string; name: string }[];
-    units?: { _id: string; name: string }[];
-    positions?: { _id: string; name: string }[];
     positionId?: string;
 }
 
@@ -37,33 +37,16 @@ export const UserModal: FC<UserModalProps> = ({
     onSubmit,
     user,
     isLoading = false,
-    organs = [],
-    units = [],
-    positions = [],
     positionId = ""
 }) => {
     const [selectedProvince, setSelectedProvince] = useState<string>("");
     const [selectedProvinceOption, setSelectedProvinceOption] = useState<OptionType | null>(null);
     const [selectedCityOption, setSelectedCityOption] = useState<OptionType | null>(null);
     const [selectedPositionOptions, setSelectedPositionOptions] = useState<OptionType[]>([]);
+    const [selectedOrgOption, setSelectedOrgOption] = useState<OptionType | null>(null);
 
-    // تبدیل positions prop به OptionType
-    const positionOptions: OptionType[] = positions.map(position => ({
-        value: position._id,
-        label: position.name
-    }));
-
-    // تنظیم مقادیر پیش‌فرض
     const getDefaultValues = (): UserForm => {
         if (user) {
-            // تبدیل positionهای user به OptionType برای نمایش
-            const userPositionOptions = user.position?.map(posId => {
-                const position = positions.find(p => p._id === posId);
-                return position ? { value: position._id, label: position.name } : null;
-            }).filter(Boolean) as OptionType[] || [];
-
-            setSelectedPositionOptions(userPositionOptions);
-
             return {
                 first_name: user.first_name || "",
                 last_name: user.last_name || "",
@@ -103,19 +86,75 @@ export const UserModal: FC<UserModalProps> = ({
         formState: { errors },
         reset,
         setValue,
+        watch
     } = useForm<UserForm>({
         resolver: zodResolver(userSchema),
         defaultValues: getDefaultValues(),
     });
 
-    // وقتی user یا positions تغییر کرد، فرم رو ریست کن
-    useEffect(() => {
-        if (user || positions.length > 0) {
-            reset(getDefaultValues());
-        }
-    }, [user, positions, reset]);
+    // Watch برای orgId برای فیلتر کردن واحدها
+    const watchedOrgId = watch("orgId");
 
-    // توابع AsyncSelect
+    // وقتی user تغییر کرد، فرم رو ریست کن
+    useEffect(() => {
+        if (user) {
+            const defaultValues = getDefaultValues();
+            reset(defaultValues);
+
+            // تنظیم مقادیر انتخابی برای موقعیت‌ها
+            if (user.position && user.position.length > 0) {
+                // اینجا باید موقعیت‌ها را از API لود کنیم
+                loadInitialPositions(user.position);
+            }
+
+            // تنظیم مقادیر انتخابی برای سازمان
+            if (user.orgId) {
+                loadInitialOrg(user.orgId);
+            }
+        }
+    }, [user, reset]);
+
+    // تابع برای لود کردن موقعیت‌های اولیه
+    const loadInitialPositions = async (positionIds: string[]) => {
+        try {
+            const result = await getPositions({
+                set: { page: 1, limit: 50, filterPositions: "all" },
+                get: { _id: 1, name: 1 },
+            });
+
+            if (result.body) {
+                const positionOptions = result.body.map((pos: { _id: string; name: string }) => ({
+                    value: pos._id,
+                    label: pos.name,
+                }));
+                setSelectedPositionOptions(positionOptions);
+            }
+        } catch (error) {
+            console.error("Error loading initial positions:", error);
+        }
+    };
+
+    // تابع برای لود کردن سازمان اولیه
+    const loadInitialOrg = async (orgId: string) => {
+        try {
+            const result = await getOrgans({
+                set: { page: 1, limit: 1, positionId },
+                get: { _id: 1, name: 1 },
+            });
+
+            if (result.body && result.body.length > 0) {
+                const org = result.body[0];
+                setSelectedOrgOption({
+                    value: org._id,
+                    label: org.name,
+                });
+            }
+        } catch (error) {
+            console.error("Error loading initial organization:", error);
+        }
+    };
+
+    // توابع AsyncSelect برای استان‌ها
     const loadProvinceOptions = useCallback(async (inputValue: string) => {
         try {
             const result = await getProvinces({
@@ -131,6 +170,7 @@ export const UserModal: FC<UserModalProps> = ({
         }
     }, []);
 
+    // توابع AsyncSelect برای شهرها
     const loadCityOptions = useCallback(async (inputValue: string) => {
         if (!selectedProvince) return [];
         try {
@@ -138,32 +178,68 @@ export const UserModal: FC<UserModalProps> = ({
                 set: { page: 1, limit: 20, provinceId: selectedProvince, name: inputValue, positionId },
                 get: { _id: 1, name: 1 },
             });
-            return result.body.map((city: { _id: string; name: string }) => ({
+            return result.body?.map((city: { _id: string; name: string }) => ({
                 value: city._id,
                 label: city.name,
-            }));
+            })) || [];
         } catch (error) {
             return [];
         }
-    }, [selectedProvince, positionId]);
+    }, [selectedProvince]);
 
-    // تابع برای لود کردن موقعیت‌ها - فقط از positions prop استفاده می‌کند
+    // توابع AsyncSelect برای سازمان‌ها
+    const loadOrgOptions = useCallback(async () => {
+        try {
+            const result = await getOrgans({
+                set: { page: 1, limit: 20, positionId },
+                get: { _id: 1, name: 1 },
+            });
+            return result.body?.map((org: { _id: string; name: string }) => ({
+                value: org._id,
+                label: org.name,
+            })) || [];
+        } catch (error) {
+            return [];
+        }
+    }, []);
+
+    // توابع AsyncSelect برای موقعیت‌ها
     const loadPositionOptions = useCallback(async (inputValue: string) => {
-        return new Promise<OptionType[]>((resolve) => {
-            // اگر positions prop خالی بود، آرایه خالی برگردان
-            if (!positions || positions.length === 0) {
-                resolve([]);
-                return;
-            }
+        try {
+            const result = await getPositions({
+                set: { page: 1, limit: 20, filterPositions: "all" },
+                get: { _id: 1, name: 1 },
+            });
+            return result.body?.map((pos: { _id: string; name: string }) => ({
+                value: pos._id,
+                label: pos.name,
+            })) || [];
+        } catch (error) {
+            return [];
+        }
+    }, []);
 
-            // فیلتر بر اساس inputValue
-            const filtered = positionOptions.filter(position =>
-                position.label.toLowerCase().includes(inputValue.toLowerCase())
-            );
-
-            resolve(filtered);
-        });
-    }, [positions, positionOptions]);
+    // توابع AsyncSelect برای واحدها - وابسته به سازمان انتخاب شده
+    const loadUnitOptions = useCallback(async (inputValue: string) => {
+        if (!watchedOrgId) return [];
+        try {
+            const result = await getUnits({
+                set: {
+                    page: 1,
+                    limit: 20,
+                    orgId: watchedOrgId,
+                    positionId
+                },
+                get: { _id: 1, name: 1 },
+            });
+            return result.body?.map((unit: { _id: string; name: string }) => ({
+                value: unit._id,
+                label: unit.name,
+            })) || [];
+        } catch (error) {
+            return [];
+        }
+    }, [watchedOrgId]);
 
     const handleProvinceChange = useCallback((option: OptionType | null) => {
         const provinceId = option?.value || "";
@@ -174,6 +250,13 @@ export const UserModal: FC<UserModalProps> = ({
         setSelectedCityOption(null);
     }, [setValue]);
 
+    const handleOrgChange = useCallback((option: OptionType | null) => {
+        const orgId = option?.value || "";
+        setSelectedOrgOption(option);
+        setValue("orgId", orgId, { shouldValidate: true });
+        setValue("unitId", "", { shouldValidate: true }); // ریست کردن واحد وقتی سازمان تغییر کرد
+    }, [setValue]);
+
     const handlePositionChange = useCallback((selectedOptions: any) => {
         const options = selectedOptions as OptionType[] || [];
         setSelectedPositionOptions(options);
@@ -182,13 +265,12 @@ export const UserModal: FC<UserModalProps> = ({
 
     const handleFormSubmit = (data: UserForm) => {
         console.log('Form data submitted:', data);
-        // مطمئن شو هیچ undefined ای وجود ندارد
         const cleanedData: UserForm = {
             ...data,
             first_name: data.first_name || "",
             last_name: data.last_name || "",
             phone: data.phone || "",
-            gender: data.gender || "male",
+            gender: data.gender || "Male",
             birth_date: data.birth_date || "",
             personnel_code: data.personnel_code || "",
             email: data.email || "",
@@ -208,6 +290,7 @@ export const UserModal: FC<UserModalProps> = ({
         setSelectedProvinceOption(null);
         setSelectedCityOption(null);
         setSelectedPositionOptions([]);
+        setSelectedOrgOption(null);
     };
 
     const handleClose = () => {
@@ -267,7 +350,7 @@ export const UserModal: FC<UserModalProps> = ({
                             <SelectBox
                                 label="جنسیت"
                                 name={field.name}
-                                value={field.value || "male"}
+                                value={field.value || "Male"}
                                 onChange={field.onChange}
                                 options={genderOptions}
                                 placeholder="انتخاب جنسیت"
@@ -347,42 +430,52 @@ export const UserModal: FC<UserModalProps> = ({
 
                 {/* سازمان و واحد */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Controller
-                        name="orgId"
-                        control={control}
-                        render={({ field }) => (
-                            <SelectBox
-                                label="سازمان"
-                                name={field.name}
-                                value={field.value || ""}
-                                onChange={(value) => {
-                                    field.onChange(value);
-                                    setValue("orgId", value || "", { shouldValidate: true });
-                                }}
-                                options={organs}
-                                placeholder="انتخاب سازمان"
-                                errMsg={errors.orgId?.message}
-                            />
-                        )}
-                    />
-                    <Controller
-                        name="unitId"
-                        control={control}
-                        render={({ field }) => (
-                            <SelectBox
-                                label="واحد"
-                                name={field.name}
-                                value={field.value || ""}
-                                onChange={(value) => {
-                                    field.onChange(value);
-                                    setValue("unitId", value || "", { shouldValidate: true });
-                                }}
-                                options={units}
-                                placeholder="انتخاب واحد"
-                                errMsg={errors.unitId?.message}
-                            />
-                        )}
-                    />
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">سازمان</label>
+                        <Controller
+                            name="orgId"
+                            control={control}
+                            render={({ field }) => (
+                                <AsyncSelect
+                                    cacheOptions
+                                    defaultOptions
+                                    loadOptions={loadOrgOptions}
+                                    placeholder="جستجوی سازمان..."
+                                    styles={CustomStyles}
+                                    value={selectedOrgOption}
+                                    onChange={handleOrgChange}
+                                    loadingMessage={() => "در حال جستجو..."}
+                                    noOptionsMessage={() => "سازمانی یافت نشد"}
+                                />
+                            )}
+                        />
+                        {errors.orgId && <p className="text-red-500 text-sm mt-1">{errors.orgId.message}</p>}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">واحد</label>
+                        <Controller
+                            name="unitId"
+                            control={control}
+                            render={({ field }) => (
+                                <AsyncSelect
+                                    cacheOptions
+                                    defaultOptions
+                                    loadOptions={loadUnitOptions}
+                                    placeholder={watchedOrgId ? "جستجوی واحد..." : "ابتدا سازمان انتخاب کنید"}
+                                    styles={CustomStyles}
+                                    isDisabled={!watchedOrgId}
+                                    value={field.value ? { value: field.value, label: "" } : null}
+                                    onChange={(option: OptionType | null) => {
+                                        setValue("unitId", option?.value || "", { shouldValidate: true });
+                                    }}
+                                    loadingMessage={() => "در حال جستجو..."}
+                                    noOptionsMessage={() => "واحدی یافت نشد"}
+                                />
+                            )}
+                        />
+                        {errors.unitId && <p className="text-red-500 text-sm mt-1">{errors.unitId.message}</p>}
+                    </div>
                 </div>
 
                 {/* موقعیت شغلی - Multi Select */}
@@ -402,7 +495,7 @@ export const UserModal: FC<UserModalProps> = ({
                                 value={selectedPositionOptions}
                                 onChange={handlePositionChange}
                                 loadingMessage={() => "در حال جستجو..."}
-                                noOptionsMessage={() => positions.length === 0 ? "هیچ موقعیتی موجود نیست" : "موقعیتی یافت نشد"}
+                                noOptionsMessage={() => "موقعیتی یافت نشد"}
                             />
                         )}
                     />

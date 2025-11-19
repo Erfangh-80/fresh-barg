@@ -7,19 +7,15 @@ import { Button } from "@/components/atoms";
 import { UserPlus, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import { UserModal } from "./UserModal";
-import { UserLevel } from "@/types/types";
 import { createUser } from "@/app/actions/user/create";
 import { useRouter } from "next/navigation";
 
 interface IUsersProps {
     users: UserType[]
     userPosition: { _id: string, level: string }
-    organs: { _id: string; name: string }[];
-    units: { _id: string; name: string }[];
-    positions: { _id: string; name: string }[];
 }
 
-const UsersPage: FC<IUsersProps> = ({ users, userPosition, positions, organs, units }) => {
+const UsersPage: FC<IUsersProps> = ({ users, userPosition }) => {
     const router = useRouter()
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<UserType | null>(null);
@@ -44,38 +40,6 @@ const UsersPage: FC<IUsersProps> = ({ users, userPosition, positions, organs, un
         }
     };
 
-    const handleEditUser = async (data: UserForm) => {
-        if (!editingUser) return;
-
-        setIsLoading(true);
-        try {
-            // در عمل اینجا API call داریم
-            toast.success("کاربر با موفقیت بروزرسانی شد");
-            setIsModalOpen(false);
-            setEditingUser(null);
-        } catch (error) {
-            toast.error("خطا در بروزرسانی کاربر");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleDeleteUser = async (id: string) => {
-        if (confirm("آیا از حذف این کاربر اطمینان دارید؟")) {
-            try {
-                // در عمل اینجا API call داریم
-                toast.success("کاربر با موفقیت حذف شد");
-            } catch (error) {
-                toast.error("خطا در حذف کاربر");
-            }
-        }
-    };
-
-    const handleEditClick = (user: UserType) => {
-        setEditingUser(user);
-        setIsModalOpen(true);
-    };
-
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingUser(null);
@@ -83,12 +47,7 @@ const UsersPage: FC<IUsersProps> = ({ users, userPosition, positions, organs, un
 
     const handleSubmit = (data: UserForm) => {
         console.log("data");
-
-        if (editingUser) {
-            handleEditUser(data);
-        } else {
-            handleCreateUser(data);
-        }
+        handleCreateUser(data);
     };
 
     return (
@@ -116,8 +75,6 @@ const UsersPage: FC<IUsersProps> = ({ users, userPosition, positions, organs, un
                             key={user._id}
                             user={user}
                             onRoleChange={() => { }}
-                            onEdit={handleEditClick}
-                            onDelete={handleDeleteUser}
                         />
                     ))}
                 </div>
@@ -149,9 +106,6 @@ const UsersPage: FC<IUsersProps> = ({ users, userPosition, positions, organs, un
                 onSubmit={handleSubmit}
                 user={editingUser}
                 positionId={userPosition._id}
-                organs={organs}
-                units={units}
-                positions={positions}
                 isLoading={isLoading}
             />
         </div>
