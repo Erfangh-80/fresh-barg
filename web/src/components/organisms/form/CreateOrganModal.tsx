@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Modal } from "@/components/mulecules"
-import { Button, MyInput, SelectBox } from "@/components/atoms"
+import { Button, MyInput, SelectBox, LocationMap } from "@/components/atoms"
 import { createOrgan } from "@/app/actions/organ/create"
 import { getProvinces } from "@/app/actions/province/gets"
 import { getCities } from "@/app/actions/city/gets"
@@ -117,8 +117,13 @@ export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({ isOpen, onCl
     }
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="ایجاد سازمان جدید">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <Modal 
+            isOpen={isOpen} 
+            onClose={onClose} 
+            title="ایجاد سازمان جدید"
+            className="max-w-2xl w-full max-h-[90vh] flex flex-col"
+        >
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full max-h-[70vh] overflow-y-auto space-y-6">
                 {/* نام و آدرس */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <MyInput
@@ -167,21 +172,14 @@ export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({ isOpen, onCl
                     />
                 </div>
 
-                {/* مختصات */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <MyInput
-                        label="طول جغرافیایی"
-                        name="longitude"
-                        register={register}
-                        errMsg={errors.longitude?.message}
-                    />
-                    <MyInput
-                        label="عرض جغرافیایی"
-                        name="latitude"
-                        register={register}
-                        errMsg={errors.latitude?.message}
-                    />
-                </div>
+                {/* مکان */}
+                <LocationMap
+                    control={control}
+                    latitudeName="latitude"
+                    longitudeName="longitude"
+                    label="موقعیت مکانی سازمان"
+                    errMsg={errors.latitude?.message || errors.longitude?.message}
+                />
 
                 {/* استان و شهر */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -218,7 +216,7 @@ export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({ isOpen, onCl
                 />
 
                 {/* دکمه‌ها */}
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-700 sticky bottom-0 bg-slate-900/80 backdrop-blur-sm">
                     <Button
                         type="button"
                         onClick={onClose}
