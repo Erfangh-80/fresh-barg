@@ -3,9 +3,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Modal } from '@/components/mulecules'; // ✅ رفع تایپو: mulecules → molecules
+import { Modal } from '@/components/mulecules';
 import { Button, MyInput, SelectBox } from '@/components/atoms';
-import AsyncSelect from 'react-select/async';
+import AsyncSelectBox from '@/components/atoms/MyAsyncSelect';
 import { createUnit } from '@/app/actions/unit/create';
 import { getProvinces } from '@/app/actions/province/gets';
 import { getCities } from '@/app/actions/city/gets';
@@ -13,9 +13,6 @@ import { getOrgans } from '@/app/actions/organ/gets';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { UnitForm, UnitSchema } from '@/types/schemaType';
-import { CustomStyles } from '@/components/atoms';
-
-type Option = { value: string; label: string };
 
 interface CreateUnitModalProps {
     isOpen: boolean;
@@ -78,7 +75,7 @@ export const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
     }, [isOpen, positionId]);
 
     // لود استان‌ها
-    const loadProvinces = useCallback(async (input: string): Promise<Option[]> => {
+    const loadProvinces = useCallback(async (input: string) => {
         try {
             const res = await getProvinces({
                 set: { name: input, page: 1, limit: 20 },
@@ -94,7 +91,7 @@ export const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
     }, []);
 
     // لود شهرها
-    const loadCities = useCallback(async (input: string): Promise<Option[]> => {
+    const loadCities = useCallback(async (input: string) => {
         if (!provinceId) return [];
         try {
             const res = await getCities({
@@ -171,70 +168,27 @@ export const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
 
                 {/* استان و شهر */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-1">
-                            استان
-                        </label>
-                        <Controller
-                            name="provinceId"
-                            control={control}
-                            render={({ field }) => (
-                                <AsyncSelect
-                                    {...field}
-                                    cacheOptions
-                                    defaultOptions
-                                    loadOptions={loadProvinces}
-                                    placeholder="جستجوی استان..."
-                                    loadingMessage={() => 'در حال جستجو...'}
-                                    noOptionsMessage={() => 'استانی یافت نشد'}
-                                    styles={CustomStyles}
-                                    onChange={(opt) => field.onChange(opt?.value || '')}
-                                    value={
-                                        field.value
-                                            ? { value: field.value, label: '' } // می‌تونی اسم استان رو هم نگه داری
-                                            : null
-                                    }
-                                    isClearable
-                                />
-                            )}
-                        />
-                        {errors.provinceId && (
-                            <p className="text-red-500 text-xs mt-1">{errors.provinceId.message}</p>
-                        )}
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-1">
-                            شهر
-                        </label>
-                        <Controller
-                            name="cityId"
-                            control={control}
-                            render={({ field }) => (
-                                <AsyncSelect
-                                    {...field}
-                                    cacheOptions
-                                    defaultOptions
-                                    loadOptions={loadCities}
-                                    placeholder={provinceId ? 'جستجوی شهر...' : 'ابتدا استان را انتخاب کنید'}
-                                    loadingMessage={() => 'در حال بارگذاری...'}
-                                    noOptionsMessage={() => 'شهری یافت نشد'}
-                                    isDisabled={!provinceId}
-                                    styles={CustomStyles}
-                                    onChange={(opt) => field.onChange(opt?.value || '')}
-                                    value={
-                                        field.value
-                                            ? { value: field.value, label: '' }
-                                            : null
-                                    }
-                                    isClearable
-                                />
-                            )}
-                        />
-                        {errors.cityId && (
-                            <p className="text-red-500 text-xs mt-1">{errors.cityId.message}</p>
-                        )}
-                    </div>
+                    <AsyncSelectBox
+                        name="provinceId"
+                        control={control}
+                        label="استان"
+                        setValue={setValue}
+                        loadOptions={loadProvinces}
+                        defaultOptions
+                        placeholder="استان را انتخاب کنید"
+                        errMsg={errors.provinceId?.message}
+                    />
+                    <AsyncSelectBox
+                        name="cityId"
+                        control={control}
+                        label="شهر"
+                        setValue={setValue}
+                        loadOptions={loadCities}
+                        defaultOptions
+                        placeholder={provinceId ? "شهر را انتخاب کنید" : "ابتدا استان را انتخاب کنید"}
+                        errMsg={errors.cityId?.message}
+                        isDisabled={!provinceId}
+                    />
                 </div>
 
                 {/* سازمان */}
@@ -256,7 +210,6 @@ export const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
                                         ? 'سازمانی موجود نیست'
                                         : 'انتخاب سازمان'
                             }
-                        // disabled={isOrgansLoading || organs.length === 0}
                         />
                     )}
                 />
