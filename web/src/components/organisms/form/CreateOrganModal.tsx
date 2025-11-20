@@ -3,16 +3,15 @@
 import { useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Modal } from "@/components/mulecules"
-import { Button, MyInput, SelectBox, LocationMap } from "@/components/atoms"
+import { Button, LocationMap, MyInput, SelectBox } from "@/components/atoms"
 import { createOrgan } from "@/app/actions/organ/create"
 import { getProvinces } from "@/app/actions/province/gets"
 import { getCities } from "@/app/actions/city/gets"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 import { OrganizationForm, organizationSchema } from "@/types/schemaType"
-import { SingleValue, ActionMeta } from "react-select"
 import AsyncSelectBox from "@/components/atoms/MyAsyncSelect"
+import { Modal } from "@/components/mulecules"
 
 interface ProvinceOption {
     value: string;
@@ -45,13 +44,37 @@ interface CreateOrganModalProps {
     positionId: string
 }
 
-export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({ isOpen, onClose, positionId }) => {
+export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({
+    isOpen,
+    onClose,
+    positionId
+}) => {
     const router = useRouter()
     const [selectedProvince, setSelectedProvince] = useState<string>("")
 
-    const { register, handleSubmit, control, reset, setValue, formState: { errors }, watch } = useForm<OrganizationForm>({
+    const {
+        register,
+        handleSubmit,
+        control,
+        reset,
+        setValue,
+        formState: { errors },
+        watch
+    } = useForm<OrganizationForm>({
         resolver: zodResolver(organizationSchema),
+        defaultValues: {
+            latitude: "",
+            longitude: "",
+            name: "",
+            address: "",
+            description: "",
+            ownership: "private",  // Default to a valid enum value
+            type: "service",       // Default to a valid enum value
+            provinceId: "",
+            cityId: ""
+        }
     })
+
 
     const loadProvinces = async (inputValue: string): Promise<ProvinceOption[]> => {
         const res = await getProvinces({
@@ -66,8 +89,8 @@ export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({ isOpen, onCl
 
     const loadCities = async (inputValue: string): Promise<CityOption[]> => {
         const provinceId = watch("provinceId")
-
         if (!provinceId) return []
+
         const res = await getCities({
             set: {
                 provinceId: provinceId,
@@ -84,12 +107,14 @@ export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({ isOpen, onCl
         }))
     }
 
-    const handleProvinceChange = (option: SingleValue<ProvinceOption>) => {
-        setSelectedProvince(option?.value || "")
-        setValue("cityId", "")
-    }
-
     const onSubmit = async (data: OrganizationForm) => {
+        // اعتبارسنجی موقعیت جغرافیایی
+        if (!data.latitude || !data.longitude) {
+            toast.error("لطفاً موقعیت جغرافیایی را روی نقشه انتخاب کنید")
+            return
+        }
+
+        console.log(data);
         const res = await createOrgan({
             set: {
                 name: data.name,
@@ -117,11 +142,11 @@ export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({ isOpen, onCl
     }
 
     return (
-        <Modal 
-            isOpen={isOpen} 
-            onClose={onClose} 
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
             title="ایجاد سازمان جدید"
-            className="max-w-2xl w-full max-h-[90vh] flex flex-col"
+            className="max-w-4xl w-full max-h-[90vh] flex flex-col" // عرض بیشتر برای نقشه
         >
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full max-h-[70vh] overflow-y-auto space-y-6">
                 {/* نام و آدرس */}
@@ -172,14 +197,17 @@ export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({ isOpen, onCl
                     />
                 </div>
 
-                {/* مکان */}
-                <LocationMap
-                    control={control}
-                    latitudeName="latitude"
-                    longitudeName="longitude"
-                    label="موقعیت مکانی سازمان"
-                    errMsg={errors.latitude?.message || errors.longitude?.message}
-                />
+                {/* موقعیت مکانی با Leaflet */}
+                {control && ( // مهم! فقط وقتی control آماده بود رندر بشه
+                    <LocationMap
+                        control={control}
+                        setValue={setValue}
+                        latitudeName="latitude"
+                        longitudeName="longitude"
+                        label="موقعیت مکانی سازمان"
+                        errMsg={errors.latitude?.message || errors.longitude?.message}
+                    />
+                )}
 
                 {/* استان و شهر */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -193,7 +221,6 @@ export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({ isOpen, onCl
                         placeholder="استان را انتخاب کنید"
                         errMsg={errors.provinceId?.message}
                     />
-
                     <AsyncSelectBox
                         name="cityId"
                         control={control}
