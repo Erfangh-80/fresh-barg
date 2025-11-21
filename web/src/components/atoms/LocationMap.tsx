@@ -10,7 +10,6 @@ import {
   FieldValues,
   UseFormSetValue,
   useWatch,
-  ControllerRenderProps,
   Controller,
 } from 'react-hook-form';
 

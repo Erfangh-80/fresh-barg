@@ -54,16 +54,16 @@ export const Sidebar = () => {
       roles: ["Ghost", "Orghead", "Unithead"]
     },
     {
-      href: "/dashboard/user",
-      label: "کاربران",
-      icon: <User className="text-slate-400 group-hover:text-green-400 transition-colors mr-3" size={20} />,
-      roles: ["Ghost", "Orghead", "Unithead"]
-    },
-    {
       href: "/dashboard/position",
       label: "نقش",
       icon: <UserCog className="text-slate-400 group-hover:text-green-400 transition-colors mr-3" size={20} />,
       roles: ["Ghost", "Orghead"]
+    },
+    {
+      href: "/dashboard/user",
+      label: "کاربران",
+      icon: <User className="text-slate-400 group-hover:text-green-400 transition-colors mr-3" size={20} />,
+      roles: ["Ghost", "Orghead", "Unithead"]
     },
     {
       href: "/dashboard/letter",

@@ -1,6 +1,6 @@
 // components/molecules/Modals/CreateOrganModal.tsx
 'use client'
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button, LocationMap, MyInput, SelectBox } from "@/components/atoms"
@@ -51,7 +51,7 @@ export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({
 }) => {
     const router = useRouter()
     const [selectedProvince, setSelectedProvince] = useState<string>("")
-
+    const [defaultCities, setDefaultCities] = useState([])
     const {
         register,
         handleSubmit,
@@ -79,28 +79,31 @@ export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({
     const loadProvinces = async (inputValue: string): Promise<ProvinceOption[]> => {
         const res = await getProvinces({
             set: { name: inputValue, page: 1, limit: 20 },
-            get: { _id: 1, name: 1 }
+            get: { _id: 1, name: 1, cities: { _id: 1, name: 1 } }
         })
         return res.body.map((p: { _id: string, name: string }) => ({
             value: p._id,
             label: p.name
         }))
     }
+    const provinceId = watch("provinceId")
 
-    const loadCities = async (inputValue: string): Promise<CityOption[]> => {
-        const provinceId = watch("provinceId")
+    const loadCities = async (inputValue?: string): Promise<CityOption[]> => {
         if (!provinceId) return []
+        const set = {
+            provinceId: provinceId,
+            name: inputValue,
+            page: 1,
+            limit: 50,
+            positionId
+        }
 
         const res = await getCities({
-            set: {
-                provinceId: provinceId,
-                name: inputValue,
-                page: 1,
-                limit: 50,
-                positionId
-            },
+            set,
             get: { _id: 1, name: 1 }
         })
+        console.log(res);
+
         return res.body.map((c: { _id: string, name: string }) => ({
             value: c._id,
             label: c.name
@@ -114,7 +117,6 @@ export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({
             return
         }
 
-        console.log(data);
         const res = await createOrgan({
             set: {
                 name: data.name,
@@ -220,6 +222,10 @@ export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({
                         defaultOptions
                         placeholder="استان را انتخاب کنید"
                         errMsg={errors.provinceId?.message}
+                        handleGetData={() => {
+                            // When province selection changes, clear the selected city
+                            setValue('cityId', '');
+                        }}
                     />
                     <AsyncSelectBox
                         name="cityId"
@@ -227,9 +233,11 @@ export const CreateOrganModal: React.FC<CreateOrganModalProps> = ({
                         label="شهر"
                         setValue={setValue}
                         loadOptions={loadCities}
-                        defaultOptions={false}
-                        placeholder={selectedProvince ? "شهر را انتخاب کنید" : "ابتدا استان را انتخاب کنید"}
+                        defaultOptions={!!provinceId} // Only load options if province is selected
+                        placeholder={provinceId ? "شهر را انتخاب کنید" : "ابتدا استان را انتخاب کنید"}
                         errMsg={errors.cityId?.message}
+                        isDisabled={!provinceId}
+                        key={`city-select-${provinceId}`} // Re-render when provinceId changes
                     />
                 </div>
 
