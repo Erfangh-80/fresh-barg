@@ -37,7 +37,6 @@ export const RoleClient: FC<RoleClientProps> = ({ roles, activePositionId }) => 
                     onClick={open}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25"
                 >
-                    <span className="ml-2">Shield</span>
                     ایجاد نقش جدید
                 </Button>
             </div>
@@ -71,7 +70,6 @@ export const RoleClient: FC<RoleClientProps> = ({ roles, activePositionId }) => 
                 </div>
             )}
 
-            {/* Modal */}
             <CreateRoleModal isOpen={isOpen} onClose={close} positionId={activePositionId} />
         </>
     );

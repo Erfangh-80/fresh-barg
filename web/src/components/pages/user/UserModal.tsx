@@ -101,9 +101,9 @@ export const UserModal: FC<UserModalProps> = ({
             const defaultValues = getDefaultValues();
             reset(defaultValues);
 
-            // تنظیم مقادیر انتخابی برای موقعیت‌ها
+            // تنظیم مقادیر انتخابی برای نقش‌ها
             if (user.position && user.position.length > 0) {
-                // اینجا باید موقعیت‌ها را از API لود کنیم
+                // اینجا باید نقش‌ها را از API لود کنیم
                 loadInitialPositions(user.position);
             }
 
@@ -114,7 +114,7 @@ export const UserModal: FC<UserModalProps> = ({
         }
     }, [user, reset]);
 
-    // تابع برای لود کردن موقعیت‌های اولیه
+    // تابع برای لود کردن نقش‌های اولیه
     const loadInitialPositions = async (positionIds: string[]) => {
         try {
             const result = await getPositions({
@@ -203,7 +203,7 @@ export const UserModal: FC<UserModalProps> = ({
         }
     }, []);
 
-    // توابع AsyncSelect برای موقعیت‌ها
+    // توابع AsyncSelect برای نقش‌ها
     const loadPositionOptions = useCallback(async (inputValue: string) => {
         try {
             const result = await getPositions({
@@ -478,9 +478,9 @@ export const UserModal: FC<UserModalProps> = ({
                     </div>
                 </div>
 
-                {/* موقعیت شغلی - Multi Select */}
+                {/* نقش شغلی - Multi Select */}
                 <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">موقعیت‌ها (چند انتخابی)</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">نقش‌ها (چند انتخابی)</label>
                     <Controller
                         name="position"
                         control={control}
@@ -490,12 +490,12 @@ export const UserModal: FC<UserModalProps> = ({
                                 cacheOptions
                                 defaultOptions
                                 loadOptions={loadPositionOptions}
-                                placeholder="جستجوی موقعیت‌ها..."
+                                placeholder="جستجوی نقش‌ها..."
                                 styles={CustomStyles}
                                 value={selectedPositionOptions}
                                 onChange={handlePositionChange}
                                 loadingMessage={() => "در حال جستجو..."}
-                                noOptionsMessage={() => "موقعیتی یافت نشد"}
+                                noOptionsMessage={() => "نقشی یافت نشد"}
                             />
                         )}
                     />

@@ -41,9 +41,9 @@ const AVAILABLE_FEATURES: ReactSelectOption[] = [
     { value: "create letters", label: "ایجاد نامه" },
     { value: "reffer letters", label: "ارجاع نامه" },
     { value: "add staff", label: "افزودن کارمند" },
-    { value: "add position to user", label: "افزودن موقعیت به کاربر" },
-    { value: "read positions", label: "مشاهده موقعیت‌ها" },
-    { value: "add position", label: "افزودن موقعیت" },
+    { value: "add position to user", label: "افزودن نقش به کاربر" },
+    { value: "read positions", label: "مشاهده نقش‌ها" },
+    { value: "add position", label: "افزودن نقش" },
     { value: "edit org", label: "ویرایش سازمان" },
     { value: "edit unit", label: "ویرایش واحد" },
 ];
@@ -100,14 +100,14 @@ export const FeaturesPage: FC<IProps> = ({ activePosition, user }) => {
 
         setIsSaving(true);
         const formFeatures = watch('features');
-        const featuresArray = formFeatures?.map((feature: ReactSelectOption) => feature.value) || [];
+        console.log({ user, selectedPosition, formFeatures });
 
         try {
             const response = await updatePosition({
                 set: {
                     _id: selectedPosition._id,
                     positionId: selectedPositionId,
-                    features: featuresArray
+                    features: formFeatures
                 },
                 get: {
                     _id: 1,
@@ -117,6 +117,7 @@ export const FeaturesPage: FC<IProps> = ({ activePosition, user }) => {
                     user: { _id: 1, first_name: 1, last_name: 1 }
                 }
             })
+            console.log(response);
 
             if (response.success) {
                 toast.success("تغییرات با موفقیت ذخیره شد");
@@ -156,12 +157,12 @@ export const FeaturesPage: FC<IProps> = ({ activePosition, user }) => {
                                 {user.first_name} {user.last_name}
                             </h3>
                             <p className="text-slate-300 mt-2">
-                                {selectedPosition?.name || 'بدون موقعیت'}
+                                {selectedPosition?.name || 'بدون نقش'}
                             </p>
                             {selectedPosition && (
                                 <div className="mt-3">
                                     <span className="text-sm bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full">
-                                        موقعیت فعال: {selectedPosition.name}
+                                        نقش فعال: {selectedPosition.name}
                                     </span>
                                 </div>
                             )}
@@ -205,11 +206,11 @@ export const FeaturesPage: FC<IProps> = ({ activePosition, user }) => {
                         </div>
                     </div>
 
-                    {/* ستون دوم - موقعیت‌های کاربر با radio box */}
+                    {/* ستون دوم - نقش‌های کاربر با radio box */}
                     <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
                         <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                             <Settings className="w-5 h-5 text-blue-400" />
-                            موقعیت‌های کاربر
+                            نقش‌های کاربر
                         </h4>
                         <div className="space-y-3">
                             {user.position?.map((position) => (
@@ -255,7 +256,7 @@ export const FeaturesPage: FC<IProps> = ({ activePosition, user }) => {
                                         </div>
                                     </div>
 
-                                    {/* ویژگی‌های این موقعیت */}
+                                    {/* ویژگی‌های این نقش */}
                                     {selectedPositionId === position._id && position.features && position.features.length > 0 && (
                                         <div className="mt-3 pt-3 border-t border-white/10">
                                             <div className="flex flex-wrap gap-1">
@@ -282,11 +283,11 @@ export const FeaturesPage: FC<IProps> = ({ activePosition, user }) => {
                             ))}
                         </div>
 
-                        {/* خلاصه موقعیت فعال */}
+                        {/* خلاصه نقش فعال */}
                         {selectedPosition && (
                             <div className="mt-4 p-3 bg-linear-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-400/30">
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-blue-300">موقعیت فعال:</span>
+                                    <span className="text-blue-300">نقش فعال:</span>
                                     <span className="text-white font-medium">{selectedPosition.name}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-sm mt-1">
@@ -331,8 +332,8 @@ export const FeaturesPage: FC<IProps> = ({ activePosition, user }) => {
                         />
                         <p className="text-xs text-slate-400 mt-3">
                             {selectedPosition
-                                ? `ویژگی‌ها برای موقعیت "${selectedPosition.name}" مدیریت می‌شوند`
-                                : 'لطفاً ابتدا موقعیت کاربر را تنظیم کنید'
+                                ? `ویژگی‌ها برای نقش "${selectedPosition.name}" مدیریت می‌شوند`
+                                : 'لطفاً ابتدا نقش کاربر را تنظیم کنید'
                             }
                         </p>
                     </div>
@@ -360,7 +361,7 @@ export const FeaturesPage: FC<IProps> = ({ activePosition, user }) => {
                     <div className="flex items-center justify-between pt-4 border-t border-white/10">
                         <div className="flex items-center gap-4 text-sm text-slate-400">
                             <span>ویژگی فعال: {currentFeatures.length}</span>
-                            <span>موقعیت: {user.position?.length || 0}</span>
+                            <span>نقش: {user.position?.length || 0}</span>
                             <span>ویژگی کل: {AVAILABLE_FEATURES.length}</span>
                         </div>
 

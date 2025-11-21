@@ -52,9 +52,9 @@ const featuresData = [
   { _id: "create letters", name: "ایجاد نامه" },
   { _id: "reffer letters", name: "ارجاع نامه" },
   { _id: "add staff", name: "افزودن کارمند" },
-  { _id: "add position to user", name: "افزودن موقعیت به کاربر" },
-  { _id: "read positions", name: "مشاهده موقعیت‌ها" },
-  { _id: "add position", name: "افزودن موقعیت" },
+  { _id: "add position to user", name: "افزودن نقش به کاربر" },
+  { _id: "read positions", name: "مشاهده نقش‌ها" },
+  { _id: "add position", name: "افزودن نقش" },
   { _id: "edit org", name: "ویرایش سازمان" },
   { _id: "edit unit", name: "ویرایش واحد" },
 ] as const;

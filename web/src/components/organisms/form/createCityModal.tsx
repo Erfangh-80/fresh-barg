@@ -65,7 +65,7 @@ export const CreateCityModal: React.FC<CreateCityModalProps> = ({ isOpen, onClos
                             name="province"
                             label="استان"
                             loadOptions={loadProvinceOptions}
-                            defaultOptions={[]} // در کلاینت فچ میشه
+                            defaultOptions// در کلاینت فچ میشه
                             placeholder="جستجو و انتخاب استان..."
                             errMsg={errors.province?.message}
                             setValue={(_, value) => {

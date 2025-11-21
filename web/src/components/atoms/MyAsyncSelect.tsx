@@ -31,6 +31,8 @@ interface InputProps<
     ) => Promise<OptionsOrGroups<Option, Group>> | void;
     defaultOptions?: OptionsOrGroups<Option, Group> | boolean;
     className?: string;
+    isDisabled?: boolean
+    handleGetData?: () => void
 }
 
 const AsyncSelectBox = <
@@ -48,6 +50,8 @@ const AsyncSelectBox = <
     defaultOptions,
     className,
     placeholder,
+    isDisabled,
+    handleGetData
 }: InputProps<Option, Group, T>) => {
     return (
         <div className={`flex flex-col gap-2 ${className || ""}`}>
@@ -67,7 +71,8 @@ const AsyncSelectBox = <
                             cacheOptions
                             defaultOptions={defaultOptions}
                             loadOptions={loadOptions}
-                            onChange={(newVal: any, actionMeta: any) => {
+                            onChange={(newVal: any) => {
+                                if (handleGetData) handleGetData()
                                 if (newVal) {
                                     const selectedValue = labelAsValue
                                         ? newVal.label
@@ -89,6 +94,7 @@ const AsyncSelectBox = <
                             isRtl={true}
                             className="react-select-container"
                             classNamePrefix="react-select"
+                            isDisabled={isDisabled ? true : false}
                         />
                     )}
                 />

@@ -208,7 +208,7 @@ export const LetterDetailsPage = ({ initialLetter }: { initialLetter?: Letter })
                             <h3 className="text-lg font-semibold text-white mb-4">خوانده شده توسط</h3>
                             <div className="text-xs text-slate-400 space-y-1">
                                 {letter.readByPositions?.map((p, i) => (
-                                    <div key={i}>• موقعیت: {p._id}</div>
+                                    <div key={i}>• نقش: {p._id}</div>
                                 ))}
                                 {letter.readByUsers?.map((u, i) => (
                                     <div key={i}>• کاربر: {u._id}</div>

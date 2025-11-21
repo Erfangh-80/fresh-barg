@@ -26,7 +26,7 @@ export const userSchema = z.object({
     cityId: z.string().min(1, "انتخاب شهر مورد نظر الزامی است"),
     orgId: z.string().min(1, "انتخاب سازمان الزامی است"),
     unitId: z.string().min(1, "انتخاب واحد الزامی است"),
-    position: z.array(z.string()).min(1, "حداقل یک موقعیت باید انتخاب شود"),
+    position: z.array(z.string()).min(1, "حداقل یک نقش باید انتخاب شود"),
 });
 
 export type UserForm = z.infer<typeof userSchema>;
