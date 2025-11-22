@@ -28,7 +28,7 @@ export const CustomStyles = {
     backgroundColor: "rgb(15 23 42)",
     border: "1px solid rgb(51 65 85)",
     borderRadius: "0.75rem",
-    zIndex: 50,
+    zIndex: 9999,
   }),
   option: (base: any, state: any) => ({
     ...base,
@@ -90,6 +90,7 @@ export const SelectBox = ({
         className={`text-sm ${errMsg ? "border-red-500" : ""}`}
         styles={CustomStyles}
         isClearable
+        menuPortalTarget={typeof window !== 'undefined' ? document.getElementById('select-portal-target') || undefined : undefined}
       />
       {errMsg && <span className="text-red-500 text-xs">{errMsg}</span>}
     </div>
