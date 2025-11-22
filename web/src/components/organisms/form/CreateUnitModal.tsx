@@ -107,10 +107,6 @@ export const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
         }
     }, [provinceId, positionId]);
 
-    // ریست شهر وقتی استان تغییر کرد
-    useEffect(() => {
-        setValue('cityId', '');
-    }, [provinceId, setValue]);
 
     const onSubmit = async (data: UnitForm) => {
         try {
@@ -177,6 +173,10 @@ export const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
                         defaultOptions
                         placeholder="استان را انتخاب کنید"
                         errMsg={errors.provinceId?.message}
+                        handleGetData={() => {
+                            // When province selection changes, clear the selected city
+                            setValue('cityId', '');
+                        }}
                     />
                     <AsyncSelectBox
                         name="cityId"
@@ -184,10 +184,11 @@ export const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
                         label="شهر"
                         setValue={setValue}
                         loadOptions={loadCities}
-                        defaultOptions
+                        defaultOptions={!!provinceId} // Only load options if province is selected
                         placeholder={provinceId ? "شهر را انتخاب کنید" : "ابتدا استان را انتخاب کنید"}
                         errMsg={errors.cityId?.message}
                         isDisabled={!provinceId}
+                        key={`city-select-${provinceId}`} // Re-render when provinceId changes
                     />
                 </div>
 

@@ -85,6 +85,7 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
     control,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RoleForm>({
     resolver: zodResolver(roleSchema),
@@ -103,18 +104,40 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
     return res?.body || res?.data || [];
   };
 
+  // Watch for orgId changes to update units
+  const orgId = watch("orgId");
+
+  // Function to load units based on selected organization
+  const loadUnitsByOrg = useCallback(async (orgId: string) => {
+    setLoading(true);
+    try {
+      const unitRes = await getUnits({
+        get: { _id: 1, name: 1 },
+        set: { page: 1, limit: 50, orgId, positionId },
+      });
+      setUnits(
+        extractArray(unitRes).map((u: any) => ({
+          _id: u._id || "",
+          name: u.name || "بدون نام",
+        })),
+      );
+    } catch (error) {
+      toast.error("خطا در بارگذاری واحدها");
+      setUnits([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [positionId]);
+
   useEffect(() => {
     if (!isOpen) return;
 
+    // Load organizations and users (units will be loaded based on selected org)
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [orgRes, unitRes, userRes] = await Promise.all([
+        const [orgRes, userRes] = await Promise.all([
           getOrgans({
-            get: { _id: 1, name: 1 },
-            set: { page: 1, limit: 50, positionId },
-          }),
-          getUnits({
             get: { _id: 1, name: 1 },
             set: { page: 1, limit: 50, positionId },
           }),
@@ -128,13 +151,6 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
           extractArray(orgRes).map((o: any) => ({
             _id: o._id || "",
             name: o.name || "بدون نام",
-          })),
-        );
-
-        setUnits(
-          extractArray(unitRes).map((u: any) => ({
-            _id: u._id || "",
-            name: u.name || "بدون نام",
           })),
         );
 
@@ -154,6 +170,17 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
 
     fetchData();
   }, [isOpen, positionId]);
+
+  // Load units when orgId changes
+  useEffect(() => {
+    if (orgId) {
+      loadUnitsByOrg(orgId);
+    } else {
+      // If no org is selected, clear the units
+      setUnits([]);
+      setValue("unitId", ""); // Also clear the selected unit
+    }
+  }, [orgId, loadUnitsByOrg, setValue]);
 
   const loadFeatures = useCallback(
     (inputValue: string): Promise<SelectOption[]> => {
@@ -209,15 +236,15 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
 
   if (!isOpen) return null;
 
-  if (loading) {
-    return (
-      <Modal isOpen={isOpen} onClose={onClose} title="در حال بارگذاری...">
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      </Modal>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <Modal isOpen={isOpen} onClose={onClose} title="در حال بارگذاری...">
+  //       <div className="flex justify-center items-center py-12">
+  //         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+  //       </div>
+  //     </Modal>
+  //   );
+  // }
 
   return (
     <Modal
