@@ -6,11 +6,14 @@ import AsyncSelect from "react-select/async";
 import { UserForm, userSchema, UserType } from "@/types/schemaType";
 import { Modal } from "@/components/mulecules";
 import { MyInput, Button, SelectBox, CustomStyles } from "@/components/atoms";
+import MyDatePicker from "@/components/atoms/MyDatePicker";
 import { getProvinces } from "@/app/actions/province/gets";
 import { getCities } from "@/app/actions/city/gets";
 import { getUnits } from "@/app/actions/unit/gets";
 import { getPositions } from "@/app/actions/position/gets";
 import { getOrgans } from "@/app/actions/organ/gets";
+import { getOrgan } from "@/app/actions/organ/get";
+import { getUnit } from "@/app/actions/unit/get";
 
 interface UserModalProps {
     isOpen: boolean;
@@ -110,6 +113,11 @@ export const UserModal: FC<UserModalProps> = ({
             // تنظیم مقادیر انتخابی برای سازمان
             if (user.orgId) {
                 loadInitialOrg(user.orgId);
+
+                // اگر واحد هم وجود داشت، واحد اولیه را لود کن
+                if (user.unitId) {
+                    loadInitialUnit(user.orgId, user.unitId);
+                }
             }
         }
     }, [user, reset]);
@@ -137,20 +145,39 @@ export const UserModal: FC<UserModalProps> = ({
     // تابع برای لود کردن سازمان اولیه
     const loadInitialOrg = async (orgId: string) => {
         try {
-            const result = await getOrgans({
-                set: { page: 1, limit: 1, positionId },
+            const result = await getOrgan({
+                set: { _id: orgId, positionId },
                 get: { _id: 1, name: 1 },
             });
 
-            if (result.body && result.body.length > 0) {
-                const org = result.body[0];
+            if (result.success && result.body) {
                 setSelectedOrgOption({
-                    value: org._id,
-                    label: org.name,
+                    value: result.body._id,
+                    label: result.body.name,
                 });
             }
         } catch (error) {
             console.error("Error loading initial organization:", error);
+        }
+    };
+
+    // تابع برای لود کردن واحد اولیه
+    const loadInitialUnit = async (orgId: string, unitId: string) => {
+        try {
+            const result = await getUnit({
+                set: {
+                    _id: unitId,
+                    positionId
+                },
+                get: { _id: 1, name: 1 },
+            });
+
+            if (result.success && result.body) {
+                // Set the unit value in the form
+                setValue("unitId", result.body._id, { shouldValidate: true });
+            }
+        } catch (error) {
+            console.error("Error loading initial unit:", error);
         }
     };
 
@@ -358,13 +385,18 @@ export const UserModal: FC<UserModalProps> = ({
                             />
                         )}
                     />
-                    <MyInput
-                        label="تاریخ تولد"
+                    <Controller
                         name="birth_date"
-                        type="date"
-                        register={register}
-                        errMsg={errors.birth_date?.message}
-                        placeholder="تاریخ تولد"
+                        control={control}
+                        render={({ field }) => (
+                            <MyDatePicker
+                                label="تاریخ تولد"
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="تاریخ تولد را انتخاب کنید"
+                                errMsg={errors.birth_date?.message}
+                            />
+                        )}
                     />
                 </div>
 
@@ -409,7 +441,7 @@ export const UserModal: FC<UserModalProps> = ({
                             render={({ field }) => (
                                 <AsyncSelect
                                     cacheOptions
-                                    defaultOptions
+                                    defaultOptions={!!selectedProvince} // Only load options if province is selected
                                     loadOptions={loadCityOptions}
                                     placeholder={selectedProvince ? "جستجوی شهر..." : "ابتدا استان انتخاب کنید"}
                                     styles={CustomStyles}
@@ -421,6 +453,7 @@ export const UserModal: FC<UserModalProps> = ({
                                     }}
                                     loadingMessage={() => "در حال جستجو..."}
                                     noOptionsMessage={() => "شهری یافت نشد"}
+                                    key={`city-select-${selectedProvince}`} // Re-render when province changes
                                 />
                             )}
                         />
@@ -471,6 +504,7 @@ export const UserModal: FC<UserModalProps> = ({
                                     }}
                                     loadingMessage={() => "در حال جستجو..."}
                                     noOptionsMessage={() => "واحدی یافت نشد"}
+                                    key={`unit-select-${watchedOrgId}`} // Re-render when orgId changes
                                 />
                             )}
                         />
