@@ -47,6 +47,7 @@ export const UserModal: FC<UserModalProps> = ({
     const [selectedCityOption, setSelectedCityOption] = useState<OptionType | null>(null);
     const [selectedPositionOptions, setSelectedPositionOptions] = useState<OptionType[]>([]);
     const [selectedOrgOption, setSelectedOrgOption] = useState<OptionType | null>(null);
+    const [selectedUnitOption, setSelectedUnitOption] = useState<OptionType | null>(null);
 
     const getDefaultValues = (): UserForm => {
         if (user) {
@@ -173,8 +174,12 @@ export const UserModal: FC<UserModalProps> = ({
             });
 
             if (result.success && result.body) {
-                // Set the unit value in the form
+                // Set the unit value in the form and update the display option
                 setValue("unitId", result.body._id, { shouldValidate: true });
+                setSelectedUnitOption({
+                    value: result.body._id,
+                    label: result.body.name,
+                });
             }
         } catch (error) {
             console.error("Error loading initial unit:", error);
@@ -282,6 +287,7 @@ export const UserModal: FC<UserModalProps> = ({
         setSelectedOrgOption(option);
         setValue("orgId", orgId, { shouldValidate: true });
         setValue("unitId", "", { shouldValidate: true }); // ریست کردن واحد وقتی سازمان تغییر کرد
+        setSelectedUnitOption(null); // Also reset the displayed unit selection
     }, [setValue]);
 
     const handlePositionChange = useCallback((selectedOptions: any) => {
@@ -318,6 +324,7 @@ export const UserModal: FC<UserModalProps> = ({
         setSelectedCityOption(null);
         setSelectedPositionOptions([]);
         setSelectedOrgOption(null);
+        setSelectedUnitOption(null);
     };
 
     const handleClose = () => {
@@ -498,8 +505,9 @@ export const UserModal: FC<UserModalProps> = ({
                                     placeholder={watchedOrgId ? "جستجوی واحد..." : "ابتدا سازمان انتخاب کنید"}
                                     styles={CustomStyles}
                                     isDisabled={!watchedOrgId}
-                                    value={field.value ? { value: field.value, label: "" } : null}
+                                    value={selectedUnitOption}
                                     onChange={(option: OptionType | null) => {
+                                        setSelectedUnitOption(option);
                                         setValue("unitId", option?.value || "", { shouldValidate: true });
                                     }}
                                     loadingMessage={() => "در حال جستجو..."}
