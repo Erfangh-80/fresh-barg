@@ -95,7 +95,7 @@ const AsyncSelectBox = <
                             className="react-select-container"
                             classNamePrefix="react-select"
                             isDisabled={isDisabled ? true : false}
-                            menuPortalTarget={typeof window !== 'undefined' ? document.getElementById('select-portal-target') || undefined : undefined}
+                        // menuPortalTarget={typeof window !== 'undefined' ? document.getElementById('select-portal-target') || undefined : undefined}
                         />
                     )}
                 />
