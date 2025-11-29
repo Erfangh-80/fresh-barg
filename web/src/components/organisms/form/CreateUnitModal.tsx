@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/components/mulecules';
-import { Button, MyInput, SelectBox } from '@/components/atoms';
+import { Button, MyInput, SelectBox, SelectOption } from '@/components/atoms';
 import AsyncSelectBox from '@/components/atoms/MyAsyncSelect';
 import { createUnit } from '@/app/actions/unit/create';
 import { getProvinces } from '@/app/actions/province/gets';
@@ -133,6 +133,12 @@ export const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
         onClose();
     };
 
+    // Handle province selection
+    // When province changes, city and city_zone should be cleared
+    const handleProvinceSelect = async (option: SelectOption | null) => {
+        setValue("cityId", "");
+    };
+
     return (
         <Modal isOpen={isOpen} onClose={handleClose} title="ایجاد واحد جدید">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -166,29 +172,25 @@ export const CreateUnitModal: React.FC<CreateUnitModalProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <AsyncSelectBox
                         name="provinceId"
-                        control={control}
-                        label="استان"
+                        label="انتخاب استان *"
                         setValue={setValue}
                         loadOptions={loadProvinces}
                         defaultOptions
                         placeholder="استان را انتخاب کنید"
                         errMsg={errors.provinceId?.message}
-                        handleGetData={() => {
-                            // When province selection changes, clear the selected city
-                            setValue('cityId', '');
-                        }}
+                        onSelectChange={handleProvinceSelect}
                     />
+
+                    {/* City Selection */}
                     <AsyncSelectBox
+                        key={watch("provinceId") || "no-province"}
                         name="cityId"
-                        control={control}
-                        label="شهر"
+                        label="انتخاب شهر *"
                         setValue={setValue}
+                        defaultOptions
                         loadOptions={loadCities}
-                        defaultOptions={!!provinceId} // Only load options if province is selected
-                        placeholder={provinceId ? "شهر را انتخاب کنید" : "ابتدا استان را انتخاب کنید"}
+                        placeholder=" شهر را انتخاب کنید"
                         errMsg={errors.cityId?.message}
-                        isDisabled={!provinceId}
-                        key={`city-select-${provinceId}`} // Re-render when provinceId changes
                     />
                 </div>
 

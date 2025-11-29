@@ -66,7 +66,7 @@ export const Sidebar = () => {
       roles: ["Ghost", "Orghead", "Unithead"]
     },
     {
-      href: "/dashboard/letter",
+      href: "/dashboard/letter/send",
       label: "نامه",
       icon: <Mail className="text-slate-400 group-hover:text-green-400 transition-colors mr-3" size={20} />,
       roles: ["Ghost", "Orghead", "Unithead", "Staff"]

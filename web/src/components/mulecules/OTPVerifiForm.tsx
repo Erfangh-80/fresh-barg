@@ -72,7 +72,7 @@ export const OTPVerifiForm: FC<OTPVerifiFormProps> = ({ setStep, phone }) => {
     if (response.success) {
       toast.success("ورود با موفقیت انجام شد");
       await setUserAuth(response.body.token);
-      router.replace("/dashboard");
+      router.replace("/dashboard/letter/send");
     } else {
       toast.error(response.body.message || "کد وارد شده اشتباه است");
     }

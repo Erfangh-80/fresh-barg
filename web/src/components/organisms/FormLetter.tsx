@@ -165,7 +165,7 @@ export const LetterForm: FC<Props> = ({ activePosition, tagOptions, authorId }) 
 
             if (responseLetter.success) {
                 toast.success("نامه با موفقیت ثبت شد");
-                router.push("/dashboard/letter");
+                router.push("/dashboard/letter/send");
                 resetForm();
             } else {
                 toast.error(responseLetter.message || "خطا در ثبت نامه");

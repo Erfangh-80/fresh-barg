@@ -5,12 +5,13 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Modal } from "@/components/mulecules"
 import { Button } from "@/components/atoms/Button"
 import { MyInput } from "@/components/atoms/Input"
-import MyAsyncMultiSelect from "@/components/atoms/AsyncSelect"
+import MyAsyncMultiSelect, { SelectOption } from "@/components/atoms/AsyncSelect"
 import { createCity } from "@/app/actions/city/create"
 import { getProvinces } from "@/app/actions/province/gets"
 import { citySchema, CityForm } from "@/types/schemaType"
 import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
+import AsyncSelectBox from "@/components/atoms/MyAsyncSelect"
 
 type Option = { value: string; label: string }
 
@@ -21,7 +22,7 @@ interface CreateCityModalProps {
 
 export const CreateCityModal: React.FC<CreateCityModalProps> = ({ isOpen, onClose }) => {
     const router = useRouter()
-    const { register, handleSubmit, control, formState: { errors } } = useForm<CityForm>({
+    const { register, handleSubmit, control, formState: { errors }, setValue } = useForm<CityForm>({
         resolver: zodResolver(citySchema),
     })
 
@@ -57,23 +58,15 @@ export const CreateCityModal: React.FC<CreateCityModalProps> = ({ isOpen, onClos
                 <MyInput label="نام انگلیسی" name="enName" register={register} errMsg={errors.enName?.message} />
                 <MyInput label="مخفف" name="abb" register={register} errMsg={errors.abb?.message} />
 
-                <Controller
+                <AsyncSelectBox
                     name="province"
-                    control={control}
-                    render={({ field }) => (
-                        <MyAsyncMultiSelect
-                            name="province"
-                            label="استان"
-                            loadOptions={loadProvinceOptions}
-                            defaultOptions// در کلاینت فچ میشه
-                            placeholder="جستجو و انتخاب استان..."
-                            errMsg={errors.province?.message}
-                            setValue={(_, value) => {
-                                const selected = Array.isArray(value) ? value[0] : value
-                                field.onChange(selected || "")
-                            }}
-                        />
-                    )}
+                    label="انتخاب استان *"
+                    setValue={setValue}
+                    loadOptions={loadProvinceOptions}
+                    defaultOptions
+                    placeholder="استان را انتخاب کنید"
+                    errMsg={errors.province?.message}
+                // onSelectChange={handleProvinceSelect}
                 />
 
                 <div className="flex justify-end gap-2 pt-4 border-t border-slate-700">

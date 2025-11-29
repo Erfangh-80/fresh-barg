@@ -1,4 +1,5 @@
 import { getLetters } from '@/app/actions/letter/gets';
+import { getActivePositionId } from '@/app/actions/position/getActivePosition';
 import { LetterStats, AdvancedFilters, LettersList } from '@/components/organisms/letter'
 import { cookies } from 'next/headers';
 
@@ -6,7 +7,7 @@ export default async function SentLettersPage() {
     const userCookie = (await cookies()).get("user");
     const user = userCookie ? JSON.parse(userCookie.value) : null;
 
-    const userPosition = user.position[0]
+    const positionId = await getActivePositionId()
     const response = await getLetters({
         get: {
             _id: 1,
@@ -20,8 +21,8 @@ export default async function SentLettersPage() {
             content: 1,
         },
         set: {
-            senderId: userPosition._id,
-            positionId: userPosition._id
+            senderId: positionId!,
+            positionId: positionId!
         },
     });
     return (

@@ -1,4 +1,5 @@
 import { getLetters } from '@/app/actions/letter/gets';
+import { getActivePositionId } from '@/app/actions/position/getActivePosition';
 import { LettersList, LetterStats } from '@/components/organisms/letter';
 import { cookies } from 'next/headers';
 
@@ -6,7 +7,8 @@ const Page = async ({ }) => {
     const userCookie = (await cookies()).get("user");
     const user = userCookie ? JSON.parse(userCookie.value) : null;
 
-    const userPosition = user.position[0]
+    const positionId = await getActivePositionId()
+
     const response = await getLetters({
         get: {
             _id: 1,
@@ -20,8 +22,8 @@ const Page = async ({ }) => {
             content: 1,
         },
         set: {
-            recieversId: userPosition._id,
-            positionId: userPosition._id
+            recieversId: positionId!,
+            positionId: positionId!
         },
     });
 

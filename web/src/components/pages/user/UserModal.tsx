@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import AsyncSelect from "react-select/async";
 import { UserForm, userSchema, UserType } from "@/types/schemaType";
 import { Modal } from "@/components/mulecules";
-import { MyInput, Button, SelectBox, CustomStyles } from "@/components/atoms";
+import { MyInput, Button, SelectBox, CustomStyles, MyAsyncMultiSelect } from "@/components/atoms";
 import MyDatePicker from "@/components/atoms/MyDatePicker";
 import { getProvinces } from "@/app/actions/province/gets";
 import { getCities } from "@/app/actions/city/gets";
@@ -14,6 +14,7 @@ import { getPositions } from "@/app/actions/position/gets";
 import { getOrgans } from "@/app/actions/organ/gets";
 import { getOrgan } from "@/app/actions/organ/get";
 import { getUnit } from "@/app/actions/unit/get";
+import AsyncSelectBox from "@/components/atoms/MyAsyncSelect";
 
 interface UserModalProps {
     isOpen: boolean;
@@ -43,11 +44,7 @@ export const UserModal: FC<UserModalProps> = ({
     positionId = ""
 }) => {
     const [selectedProvince, setSelectedProvince] = useState<string>("");
-    const [selectedProvinceOption, setSelectedProvinceOption] = useState<OptionType | null>(null);
-    const [selectedCityOption, setSelectedCityOption] = useState<OptionType | null>(null);
     const [selectedPositionOptions, setSelectedPositionOptions] = useState<OptionType[]>([]);
-    const [selectedOrgOption, setSelectedOrgOption] = useState<OptionType | null>(null);
-    const [selectedUnitOption, setSelectedUnitOption] = useState<OptionType | null>(null);
 
     const getDefaultValues = (): UserForm => {
         if (user) {
@@ -98,6 +95,7 @@ export const UserModal: FC<UserModalProps> = ({
 
     // Watch برای orgId برای فیلتر کردن واحدها
     const watchedOrgId = watch("orgId");
+    const watchProvinceId = watch("provinceId");
 
     // وقتی user تغییر کرد، فرم رو ریست کن
     useEffect(() => {
@@ -151,12 +149,6 @@ export const UserModal: FC<UserModalProps> = ({
                 get: { _id: 1, name: 1 },
             });
 
-            if (result.success && result.body) {
-                setSelectedOrgOption({
-                    value: result.body._id,
-                    label: result.body.name,
-                });
-            }
         } catch (error) {
             console.error("Error loading initial organization:", error);
         }
@@ -176,10 +168,6 @@ export const UserModal: FC<UserModalProps> = ({
             if (result.success && result.body) {
                 // Set the unit value in the form and update the display option
                 setValue("unitId", result.body._id, { shouldValidate: true });
-                setSelectedUnitOption({
-                    value: result.body._id,
-                    label: result.body.name,
-                });
             }
         } catch (error) {
             console.error("Error loading initial unit:", error);
@@ -204,10 +192,9 @@ export const UserModal: FC<UserModalProps> = ({
 
     // توابع AsyncSelect برای شهرها
     const loadCityOptions = useCallback(async (inputValue: string) => {
-        if (!selectedProvince) return [];
         try {
             const result = await getCities({
-                set: { page: 1, limit: 20, provinceId: selectedProvince, name: inputValue, positionId },
+                set: { page: 1, limit: 20, provinceId: watchProvinceId, name: inputValue, positionId },
                 get: { _id: 1, name: 1 },
             });
             return result.body?.map((city: { _id: string; name: string }) => ({
@@ -273,21 +260,17 @@ export const UserModal: FC<UserModalProps> = ({
         }
     }, [watchedOrgId]);
 
-    const handleProvinceChange = useCallback((option: OptionType | null) => {
+    const handleProvinceSelect = useCallback((option: OptionType | null) => {
         const provinceId = option?.value || "";
         setSelectedProvince(provinceId);
-        setSelectedProvinceOption(option);
         setValue("provinceId", provinceId, { shouldValidate: true });
         setValue("cityId", "", { shouldValidate: true });
-        setSelectedCityOption(null);
     }, [setValue]);
 
     const handleOrgChange = useCallback((option: OptionType | null) => {
         const orgId = option?.value || "";
-        setSelectedOrgOption(option);
         setValue("orgId", orgId, { shouldValidate: true });
         setValue("unitId", "", { shouldValidate: true }); // ریست کردن واحد وقتی سازمان تغییر کرد
-        setSelectedUnitOption(null); // Also reset the displayed unit selection
     }, [setValue]);
 
     const handlePositionChange = useCallback((selectedOptions: any) => {
@@ -297,7 +280,6 @@ export const UserModal: FC<UserModalProps> = ({
     }, [setValue]);
 
     const handleFormSubmit = (data: UserForm) => {
-        console.log('Form data submitted:', data);
         const cleanedData: UserForm = {
             ...data,
             first_name: data.first_name || "",
@@ -320,11 +302,7 @@ export const UserModal: FC<UserModalProps> = ({
     const resetForm = () => {
         reset(getDefaultValues());
         setSelectedProvince("");
-        setSelectedProvinceOption(null);
-        setSelectedCityOption(null);
         setSelectedPositionOptions([]);
-        setSelectedOrgOption(null);
-        setSelectedUnitOption(null);
     };
 
     const handleClose = () => {
@@ -418,111 +396,67 @@ export const UserModal: FC<UserModalProps> = ({
 
                 {/* موقعیت مکانی */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">استان</label>
-                        <Controller
-                            name="provinceId"
-                            control={control}
-                            render={({ field }) => (
-                                <AsyncSelect
-                                    cacheOptions
-                                    defaultOptions
-                                    loadOptions={loadProvinceOptions}
-                                    placeholder="جستجوی استان..."
-                                    styles={CustomStyles}
-                                    value={selectedProvinceOption}
-                                    onChange={handleProvinceChange}
-                                    loadingMessage={() => "در حال جستجو..."}
-                                    noOptionsMessage={() => "استانی یافت نشد"}
-                                />
-                            )}
-                        />
-                        {errors.provinceId && <p className="text-red-500 text-sm mt-1">{errors.provinceId.message}</p>}
-                    </div>
+                    <AsyncSelectBox
+                        name="provinceId"
+                        label="انتخاب استان *"
+                        setValue={setValue}
+                        loadOptions={loadProvinceOptions}
+                        defaultOptions
+                        placeholder="استان را انتخاب کنید"
+                        errMsg={errors.provinceId?.message}
+                        onSelectChange={handleProvinceSelect}
+                    />
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">شهر</label>
-                        <Controller
-                            name="cityId"
-                            control={control}
-                            render={({ field }) => (
-                                <AsyncSelect
-                                    cacheOptions
-                                    defaultOptions={!!selectedProvince} // Only load options if province is selected
-                                    loadOptions={loadCityOptions}
-                                    placeholder={selectedProvince ? "جستجوی شهر..." : "ابتدا استان انتخاب کنید"}
-                                    styles={CustomStyles}
-                                    isDisabled={!selectedProvince}
-                                    value={selectedCityOption}
-                                    onChange={(option: OptionType | null) => {
-                                        setSelectedCityOption(option);
-                                        setValue("cityId", option?.value || "", { shouldValidate: true });
-                                    }}
-                                    loadingMessage={() => "در حال جستجو..."}
-                                    noOptionsMessage={() => "شهری یافت نشد"}
-                                    key={`city-select-${selectedProvince}`} // Re-render when province changes
-                                />
-                            )}
-                        />
-                        {errors.cityId && <p className="text-red-500 text-sm mt-1">{errors.cityId.message}</p>}
-                    </div>
+                    {/* City Selection */}
+                    <AsyncSelectBox
+                        key={watch("provinceId") || "no-province"}
+                        name="cityId"
+                        label="انتخاب شهر *"
+                        setValue={setValue}
+                        defaultOptions
+                        loadOptions={loadCityOptions}
+                        placeholder=" شهر را انتخاب کنید"
+                        errMsg={errors.cityId?.message}
+                    />
                 </div>
 
                 {/* سازمان و واحد */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">سازمان</label>
-                        <Controller
-                            name="orgId"
-                            control={control}
-                            render={({ field }) => (
-                                <AsyncSelect
-                                    cacheOptions
-                                    defaultOptions
-                                    loadOptions={loadOrgOptions}
-                                    placeholder="جستجوی سازمان..."
-                                    styles={CustomStyles}
-                                    value={selectedOrgOption}
-                                    onChange={handleOrgChange}
-                                    loadingMessage={() => "در حال جستجو..."}
-                                    noOptionsMessage={() => "سازمانی یافت نشد"}
-                                />
-                            )}
-                        />
-                        {errors.orgId && <p className="text-red-500 text-sm mt-1">{errors.orgId.message}</p>}
-                    </div>
+                    <AsyncSelectBox
+                        name="orgId"
+                        label="انتخاب سازمان *"
+                        setValue={setValue}
+                        defaultOptions
+                        loadOptions={loadOrgOptions}
+                        placeholder=" سازمان را انتخاب کنید"
+                        errMsg={errors.orgId?.message}
+                        onSelectChange={handleOrgChange}
+                    />
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">واحد</label>
-                        <Controller
-                            name="unitId"
-                            control={control}
-                            render={({ field }) => (
-                                <AsyncSelect
-                                    cacheOptions
-                                    defaultOptions
-                                    loadOptions={loadUnitOptions}
-                                    placeholder={watchedOrgId ? "جستجوی واحد..." : "ابتدا سازمان انتخاب کنید"}
-                                    styles={CustomStyles}
-                                    isDisabled={!watchedOrgId}
-                                    value={selectedUnitOption}
-                                    onChange={(option: OptionType | null) => {
-                                        setSelectedUnitOption(option);
-                                        setValue("unitId", option?.value || "", { shouldValidate: true });
-                                    }}
-                                    loadingMessage={() => "در حال جستجو..."}
-                                    noOptionsMessage={() => "واحدی یافت نشد"}
-                                    key={`unit-select-${watchedOrgId}`} // Re-render when orgId changes
-                                />
-                            )}
-                        />
-                        {errors.unitId && <p className="text-red-500 text-sm mt-1">{errors.unitId.message}</p>}
-                    </div>
+                    <AsyncSelectBox
+                        key={watch("orgId") || "no-organ"}
+                        name="unitId"
+                        label="انتخاب واحد *"
+                        setValue={setValue}
+                        defaultOptions
+                        loadOptions={loadUnitOptions}
+                        placeholder=" واحد را انتخاب کنید"
+                        errMsg={errors.unitId?.message}
+                    />
                 </div>
 
                 {/* نقش شغلی - Multi Select */}
                 <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">نقش‌ها (چند انتخابی)</label>
+                    <MyAsyncMultiSelect
+                        label="افزود نقش"
+                        name="position"
+                        setValue={setValue}
+                        defaultOptions
+                        loadOptions={loadPositionOptions}
+                        errMsg={errors.position?.message}
+
+                    />
+                    {/* <label className="block text-sm font-medium text-slate-300 mb-2">نقش‌ها (چند انتخابی)</label>
                     <Controller
                         name="position"
                         control={control}
@@ -541,7 +475,7 @@ export const UserModal: FC<UserModalProps> = ({
                             />
                         )}
                     />
-                    {errors.position && <p className="text-red-500 text-sm mt-1">{errors.position.message}</p>}
+                    {errors.position && <p className="text-red-500 text-sm mt-1">{errors.position.message}</p>} */}
                 </div>
 
                 {/* دکمه‌ها */}

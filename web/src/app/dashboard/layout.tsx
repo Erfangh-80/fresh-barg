@@ -6,6 +6,7 @@ import { AuthProvider } from "@/context/authContext";
 import iranYekanFont from "@/constans/LocalFont";
 import { GetMe } from "../actions/user/getMe";
 import "../globals.css"
+import { Toaster } from "react-hot-toast";
 
 export default async function AdminLayout({
   children,
@@ -47,6 +48,8 @@ export default async function AdminLayout({
                 </div>
               </div>
             </div>
+            <Toaster position="top-center" reverseOrder={false} />
+
           </PositionProvider>
         </AuthProvider>
 
