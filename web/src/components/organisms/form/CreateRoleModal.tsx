@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal } from "@/components/mulecules";
-import { Button, MyInput, SelectBox, CustomStyles } from "@/components/atoms";
+import { Button, MyInput, SelectBox, CustomStyles, MyAsyncMultiSelect } from "@/components/atoms";
 import AsyncSelect from "react-select/async";
 import { createPosition } from "@/app/actions/position/create";
 import { getOrgans } from "@/app/actions/organ/gets";
@@ -13,6 +13,7 @@ import { getUsers } from "@/app/actions/user/getUsers";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { z } from "zod";
+import AsyncSelectBox from "@/components/atoms/MyAsyncSelect";
 
 // --- 1. تعریف دقیق فیچرها با `as const` ---
 const featureValues = [
@@ -73,11 +74,6 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
   positionId,
 }) => {
   const router = useRouter();
-  const [organs, setOrgans] = useState<{ _id: string; name: string }[]>([]);
-  const [units, setUnits] = useState<{ _id: string; name: string }[]>([]);
-  const [users, setUsers] = useState<{ _id: string; name: string }[]>([]);
-  const [selectedFeatures, setSelectedFeatures] = useState<SelectOption[]>([]);
-  const [loading, setLoading] = useState(false);
 
   const {
     register,
@@ -99,88 +95,55 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
     },
   });
 
-  const extractArray = (res: any): any[] => {
-    if (Array.isArray(res)) return res;
-    return res?.body || res?.data || [];
-  };
-
-  // Watch for orgId changes to update units
-  const orgId = watch("orgId");
-
-  // Function to load units based on selected organization
-  const loadUnitsByOrg = useCallback(async (orgId: string) => {
-    setLoading(true);
+  const loadOrgOptions = useCallback(async () => {
     try {
-      const unitRes = await getUnits({
+      const result = await getOrgans({
+        set: { page: 1, limit: 20, positionId },
         get: { _id: 1, name: 1 },
-        set: { page: 1, limit: 50, orgId, positionId },
       });
-      setUnits(
-        extractArray(unitRes).map((u: any) => ({
-          _id: u._id || "",
-          name: u.name || "بدون نام",
-        })),
-      );
+      return result.body?.map((org: { _id: string; name: string }) => ({
+        value: org._id,
+        label: org.name,
+      })) || [];
     } catch (error) {
-      toast.error("خطا در بارگذاری واحدها");
-      setUnits([]);
-    } finally {
-      setLoading(false);
+      return [];
     }
-  }, [positionId]);
+  }, []);
 
-  useEffect(() => {
-    if (!isOpen) return;
+  const loadUserOptions = useCallback(async () => {
+    try {
+      const result = await getUsers({
+        set: { page: 1, limit: 20 },
+        get: { _id: 1, first_name: 1, last_name: 1 },
+      });
+      console.log(result);
 
-    // Load organizations and users (units will be loaded based on selected org)
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [orgRes, userRes] = await Promise.all([
-          getOrgans({
-            get: { _id: 1, name: 1 },
-            set: { page: 1, limit: 50, positionId },
-          }),
-          getUsers({
-            get: { _id: 1, first_name: 1, last_name: 1 },
-            set: { page: 1, limit: 100 },
-          }),
-        ]);
-
-        setOrgans(
-          extractArray(orgRes).map((o: any) => ({
-            _id: o._id || "",
-            name: o.name || "بدون نام",
-          })),
-        );
-
-        setUsers(
-          extractArray(userRes).map((u: any) => ({
-            _id: u._id || "",
-            name:
-              `${u.first_name || ""} ${u.last_name || ""}`.trim() || "بدون نام",
-          })),
-        );
-      } catch (error) {
-        toast.error("خطا در بارگذاری اطلاعات");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [isOpen, positionId]);
-
-  // Load units when orgId changes
-  useEffect(() => {
-    if (orgId) {
-      loadUnitsByOrg(orgId);
-    } else {
-      // If no org is selected, clear the units
-      setUnits([]);
-      setValue("unitId", ""); // Also clear the selected unit
+      return result?.map((user: { _id: string; first_name: string, last_name: string }) => ({
+        value: user._id,
+        label: `${user.first_name} ${user.last_name}`,
+      })) || [];
+    } catch (error) {
+      return [];
     }
-  }, [orgId, loadUnitsByOrg, setValue]);
+  }, []);
+
+  const loadUnits = useCallback(async (input: string) => {
+    const orgId = watch("orgId")
+    if (!orgId) return []
+
+    try {
+      const res = await getUnits({
+        set: { page: 1, limit: 10, positionId, orgId },
+        get: { _id: 1, name: 1 },
+      });
+      return (res.body || [])?.map((p: { _id: string; name: string }) => ({
+        value: p._id,
+        label: p.name,
+      }));
+    } catch {
+      return [];
+    }
+  }, []);
 
   const loadFeatures = useCallback(
     (inputValue: string): Promise<SelectOption[]> => {
@@ -197,7 +160,6 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
   );
 
   const onSubmit = async (data: RoleForm) => {
-    console.log(data);
     try {
       const res = await createPosition({
         set: {
@@ -227,24 +189,14 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
 
   const handleClose = () => {
     reset();
-    setSelectedFeatures([]);
-    setOrgans([]);
-    setUnits([]);
-    setUsers([]);
     onClose();
   };
 
-  if (!isOpen) return null;
+  const handleOrganSelect = () => {
+    setValue("unitId", "")
+  }
 
-  // if (loading) {
-  //   return (
-  //     <Modal isOpen={isOpen} onClose={onClose} title="در حال بارگذاری...">
-  //       <div className="flex justify-center items-center py-12">
-  //         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-  //       </div>
-  //     </Modal>
-  //   );
-  // }
+  if (!isOpen) return null;
 
   return (
     <Modal
@@ -266,127 +218,65 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Controller
+          <AsyncSelectBox
             name="orgId"
-            control={control}
-            render={({ field }) => (
-              <SelectBox
-                name="orgId"
-                label="سازمان"
-                options={organs}
-                value={field.value}
-                onChange={field.onChange}
-                errMsg={errors.orgId?.message}
-                placeholder="انتخاب سازمان"
-              />
-            )}
+            label="انتخاب سازمان *"
+            setValue={setValue}
+            loadOptions={loadOrgOptions}
+            defaultOptions
+            placeholder="استان را انتخاب کنید"
+            errMsg={errors.orgId?.message}
+            onSelectChange={handleOrganSelect}
           />
-          <Controller
-            name="unitId"
-            control={control}
-            render={({ field }) => (
-              <SelectBox
-                name="unitId"
-                label="واحد"
-                options={units}
-                value={field.value}
-                onChange={field.onChange}
-                errMsg={errors.unitId?.message}
-                placeholder="انتخاب واحد"
-              />
-            )}
-          />
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Controller
-            name="panel"
-            control={control}
-            render={({ field }) => (
-              <SelectBox
-                name="panel"
-                label="پنل"
-                options={[
-                  { _id: "darya", name: "دریا" },
-                  { _id: "johar", name: "جوهر" },
-                  { _id: "nameh", name: "نامه" },
-                  { _id: "anbar", name: "انبار" },
-                  { _id: "bita", name: "بیتا" },
-                ]}
-                value={field.value}
-                onChange={field.onChange}
-              />
-            )}
-          />
-          <Controller
-            name="level"
-            control={control}
-            render={({ field }) => (
-              <SelectBox
-                name="level"
-                label="سطح دسترسی"
-                options={[
-                  { _id: "Ghost", name: "سوپر ادمین" },
-                  { _id: "Orghead", name: "رئیس سازمان" },
-                  { _id: "Unithead", name: "رئیس واحد" },
-                  { _id: "Staff", name: "کارمند" },
-                ]}
-                value={field.value}
-                onChange={field.onChange}
-              />
-            )}
+          <AsyncSelectBox
+            key={watch("orgId") || "no-organ"}
+            name="unitId"
+            label="انتخاب واحد *"
+            setValue={setValue}
+            defaultOptions
+            loadOptions={loadUnits}
+            placeholder=" واحد را انتخاب کنید"
+            errMsg={errors.unitId?.message}
           />
         </div>
 
         <Controller
-          name="userId"
+          name="level"
           control={control}
           render={({ field }) => (
             <SelectBox
-              name="userId"
-              label="کاربر (اختیاری)"
-              options={users}
+              name="level"
+              label="سطح دسترسی"
+              options={[
+                { _id: "Ghost", name: "سوپر ادمین" },
+                { _id: "Orghead", name: "رئیس سازمان" },
+                { _id: "Unithead", name: "رئیس واحد" },
+                { _id: "Staff", name: "کارمند" },
+              ]}
               value={field.value}
               onChange={field.onChange}
-              placeholder="انتخاب کاربر (اختیاری)"
             />
           )}
         />
 
-        {/* --- بخش اصلاح شده: features --- */}
+        <AsyncSelectBox
+          label="کاربر (اختیاری)"
+          name="userId"
+          setValue={setValue}
+          loadOptions={loadUserOptions}
+          defaultOptions
+          errMsg={errors.userId?.message}
+        />
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            دسترسی‌ها (اختیاری - چند انتخابی)
-          </label>
-          <Controller
+          <MyAsyncMultiSelect
+            label="ویژگی های کاربر"
             name="features"
-            control={control}
-            render={({ field }) => (
-              <AsyncSelect
-                isMulti
-                cacheOptions
-                defaultOptions
-                loadOptions={loadFeatures}
-                placeholder="جستجو و انتخاب دسترسی‌ها..."
-                styles={CustomStyles}
-                value={selectedFeatures}
-                onChange={(opts) => {
-                  const options = opts as SelectOption[];
-                  const values = options.map((o) => o.value); // values: Feature[]
-                  setValue("features", values); // حالا تایپ دقیقاً مطابقت داره
-                  setSelectedFeatures(options);
-                  field.onChange(values);
-                }}
-                loadingMessage={() => "در حال جستجو..."}
-                noOptionsMessage={() => "دسترسی‌ای یافت نشد"}
-              />
-            )}
+            setValue={setValue}
+            loadOptions={loadFeatures}
+            defaultOptions
+            errMsg={errors.features?.message}
           />
-          {errors.features && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.features.message}
-            </p>
-          )}
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
