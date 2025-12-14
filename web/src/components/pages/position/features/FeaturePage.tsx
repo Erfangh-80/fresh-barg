@@ -1,5 +1,6 @@
 'use client';
 import { updatePosition } from "@/app/actions/position/update";
+import { AddPositionToUserForm } from "@/components/organisms/AddPositionToUserForm";
 import { MyAsyncMultiSelect } from "@/components/atoms";
 import { AvatarUpload } from "@/components/mulecules";
 import { ReactSelectOption } from "@/types/types";
@@ -8,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { FC, useMemo, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
+
 
 interface UserData {
     _id: string;
@@ -382,6 +384,11 @@ export const FeaturesPage: FC<IProps> = ({ activePosition, user }) => {
                                 </>
                             )}
                         </button>
+                    </div>
+                    <div className="border-t border-white/15">
+                        <AddPositionToUserForm
+                            userId={user._id}
+                        />
                     </div>
                 </div>
             </div>
