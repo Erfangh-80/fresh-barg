@@ -78,6 +78,19 @@ export const OTPVerifiForm: FC<OTPVerifiFormProps> = ({ setStep, phone }) => {
     }
   };
 
+  function maskMiddleDigits(numberInput: string | number): string {
+    const numberStr = String(numberInput);  // Coerce to string to avoid type issues
+    const n = numberStr.length;
+    if (n < 3) {
+      return numberStr; // اگر کمتر از 3 رقم باشد، همان را برگردان
+    }
+    // محاسبه موقعیت شروع سه رقم وسط
+    const start = Math.floor((n - 3) / 2);
+    // جایگزینی سه رقم با ***
+    const masked = numberStr.slice(0, start) + '***' + numberStr.slice(start + 3);
+    return masked;
+  }
+
   return (
     <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-8 shadow-2xl">
       <div className="text-center mb-6">
@@ -85,7 +98,7 @@ export const OTPVerifiForm: FC<OTPVerifiFormProps> = ({ setStep, phone }) => {
         <h2 className="text-xl font-bold mb-2">کد تأیید</h2>
         <p className="text-slate-400 text-sm">
           کد ۵ رقمی به{" "}
-          <span className="text-green-500 font-semibold">{phone}</span> ارسال شد
+          <span className="text-green-500 font-semibold">{maskMiddleDigits(phone)}</span> ارسال شد
         </p>
       </div>
 
